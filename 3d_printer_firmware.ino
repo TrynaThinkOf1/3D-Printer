@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <stdint.h>
 
 #include "servo_control.hpp"
 #include "gcode_interpretation.hpp"
@@ -6,7 +7,8 @@
 #include "file_reader.hpp"
 
 char* current_instruction = "G28";
-char[] files;
+char** files = get_files();
+const uint8_t num_files = sizeof(files) / sizeof(files[0]);
 
 void setup() {
   Serial.begin(2000000);
