@@ -12,6 +12,7 @@ PIN SETUP (these will not be defined as integer variables and must be used as li
 #include <stdint.h>
 #include <SD.h>
 #include <SPI.h>
+#include <cstring>
 
 #include "servo_control.hpp"
 #include "gcode_interpretation.hpp"
@@ -20,8 +21,12 @@ PIN SETUP (these will not be defined as integer variables and must be used as li
 
 bool printing = false;
 
-char* current_instruction = "G28";
-char* current_file = "";
+uint8_t num_files;
+
+char current_instruction[5]; // so that it can hold up to the longest instruction + terminator ('M999\0')
+char current_file_name[33]; // so that it can store the max length file name of a FAT32 disk + terminator
+
+// char current_page[5]; // I don't plan to have page names longer than 4 characters, but we'll see
 
 void raise_error(char* error_msg) {
   Serial.println(error_msg);
@@ -33,10 +38,11 @@ void setup() {
     ; // this will ensure that Serial is initialized before everything else
   }
 
-  if (!SD.begin(5)) { // GPIO 5 is the pin which the CS pin on the SD card reader is connected to
+  if (!SD.begin(5)) { // GPIO 5 is the ESP32 pin which is connected to the CS (ChipSelect) port on the SD card reader
+    raise_error("Could not connect to SD card reader!");
     exit(1);
   }
-  
+  /*
   const uint8_t num_files = get_num_files();
   char files[num_files][32]; // 32 character file names are typical for SD cards
   char* file_ptrs[num_files];
@@ -44,9 +50,11 @@ void setup() {
     file_ptrs[i] = files[i];
   }
   get_file_names(file_ptrs, num_files);
+  */
+  num_files = get_num_files();
 
-  char* file = read_file("something.gcode");
-  free(file); // read_file() uses malloc to create a pointer to a place on the heap
+  char* files[num_files];
+  get_file_names(files);
 }
 
 void loop() {
